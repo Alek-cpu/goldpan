@@ -30,6 +30,7 @@ async function main() {
             console.log(`Subject: ${email.subject}`);
             console.log(`Date: ${email.date.toLocaleString()}`);
             console.log(`ID: ${email.id}`);
+            console.log(`Text: ${email.text.slice(0, 500)}`);
         }
     } catch (error) {
         console.error('❌ Failed to connect to IMAP server:');

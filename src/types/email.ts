@@ -3,4 +3,5 @@ export type Email = {
   from: string;
   subject: string;
   date: Date;
+  text: string;
 };

@@ -1,4 +1,5 @@
 import type { ImapFlow } from 'imapflow';
+import { simpleParser } from 'mailparser';
 
 import type { Email } from '../types/email.js';
 
@@ -22,9 +23,14 @@ export async function getLatestEmails(
         for await (const message of client.fetch(`${start}:*`, {
             uid: true,
             envelope: true,
+            source: true,
         })) {
+            const parsed = message.source
+                ? await simpleParser(message.source)
+                : null;
             emails.push({
                 id: String(message.uid),
+                text: parsed?.text ?? '',
 
                 from:
                     message.envelope?.from
