@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { createImapClient } from './email/imapClient.js';
 import { getMailboxes } from './email/getMailboxes.js';
 import { getLatestEmails } from './email/getLatestEmails.js';
+import {saveEmails} from './storage/saveEmails.js';
 
 async function main() {
     const client = createImapClient();
@@ -13,25 +14,15 @@ async function main() {
 
         await client.connect();
         console.log('✅ Connected to IMAP server');
-        const mailboxes = await getMailboxes(client);
-        console.log('\n📬 Mailboxes:', mailboxes);
-        for (const mailbox of mailboxes) {
-            console.log(
-                `- ${mailbox.path}${mailbox.specialUse ? ` (${mailbox.specialUse})` : ''}`,
-            );
-        }
+        // const mailboxes = await getMailboxes(client);
 
-        const emails = await getLatestEmails(client, 5);
+        const emails = await getLatestEmails(client, 50);
 
-        console.log('\n📧 Latest emails:');
+        console.log(`Fetched ${emails.length} emails`);
 
-        for (const email of emails) {
-            console.log(`\nFrom: ${email.from}`);
-            console.log(`Subject: ${email.subject}`);
-            console.log(`Date: ${email.date.toLocaleString()}`);
-            console.log(`ID: ${email.id}`);
-            console.log(`Text: ${email.text.slice(0, 500)}`);
-        }
+        await saveEmails(emails, './data/emails.json');
+
+        console.log(`💾 Saved ${emails.length} emails to data/emails.json`);
     } catch (error) {
         console.error('❌ Failed to connect to IMAP server:');
         console.error(error);
