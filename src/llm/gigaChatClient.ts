@@ -15,9 +15,10 @@ export function createGigaChatClient() {
   });
 
   return new GigaChat({
-    credentials,
-    scope: 'GIGACHAT_API_PERS',
-    model: process.env.GIGACHAT_MODEL ?? 'GigaChat-2-Pro',
-    httpsAgent,
-  });
+  credentials,
+  scope: 'GIGACHAT_API_PERS',
+  model: process.env.GIGACHAT_MODEL ?? 'GigaChat-2-Pro',
+  httpsAgent,
+  timeout: 120_000,
+});
 }

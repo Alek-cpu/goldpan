@@ -16,7 +16,7 @@ async function main() {
         console.log('✅ Connected to IMAP server');
         // const mailboxes = await getMailboxes(client);
 
-        const emails = await getLatestEmails(client, 50);
+        const emails = await getLatestEmails(client, 150);
 
         console.log(`Fetched ${emails.length} emails`);
 
