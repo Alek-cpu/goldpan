@@ -2,6 +2,7 @@ import type { EmailForAnalysis } from '../types/emailForAnalysis.js';
 import type { EmailAnalysisResult } from '../types/emailAnalysis.js';
 
 import { createGigaChatClient } from '../llm/gigaChatClient.js';
+import { parseLlmJson } from '../llm/utils/parseLlmJson.js';
 
 export async function analyzeEmails(
     emails: EmailForAnalysis[],
@@ -46,26 +47,36 @@ export async function analyzeEmails(
 ${JSON.stringify(emails)}
 `;
 
-    const response = await client.chat({
-        messages: [
-            {
-                role: 'user',
-                content: prompt,
-            },
-        ],
-    });
+    const MAX_ATTEMPTS = 2;
 
-    const content = response.choices[0]?.message.content;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const response = await client.chat({
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt,
+                },
+            ],
+        });
 
-    if (!content) {
-        throw new Error('GigaChat returned an empty response');
+        const content = response.choices[0]?.message.content;
+
+        if (!content) {
+            throw new Error('GigaChat returned an empty response');
+        }
+
+        try {
+            return parseLlmJson<EmailAnalysisResult>(content);
+        } catch (error) {
+            console.warn(
+                `⚠️ Invalid JSON from GigaChat. Attempt ${attempt}/${MAX_ATTEMPTS}`,
+            );
+
+            if (attempt === MAX_ATTEMPTS) {
+                throw error;
+            }
+        }
     }
 
-    const cleanedContent = content
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/, '')
-        .replace(/\s*```$/, '')
-        .trim();
-
-    return JSON.parse(cleanedContent) as EmailAnalysisResult;
+    throw new Error('Email analysis failed');
 }

@@ -5,6 +5,7 @@ import type {
 } from '../types/emailAnalysis.js';
 
 import { createGigaChatClient } from '../llm/gigaChatClient.js';
+import { parseLlmJson } from '../llm/utils/parseLlmJson.js';
 
 export async function analyzeMissingEmails(
   emails: EmailForAnalysis[],
@@ -70,11 +71,5 @@ ${JSON.stringify(emails)}
     throw new Error('GigaChat returned an empty response');
   }
 
-  const cleanedContent = content
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/, '')
-    .replace(/\s*```$/, '')
-    .trim();
-
-  return JSON.parse(cleanedContent) as EmailAnalysisResult;
+  return parseLlmJson<EmailAnalysisResult>(content);
 }

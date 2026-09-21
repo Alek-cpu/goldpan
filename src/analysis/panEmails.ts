@@ -9,73 +9,87 @@ import { validateEmailAnalysis } from './validateEmailAnalysis.js';
 import { mergeEmailAnalysis } from './mergeEmailAnalysis.js';
 
 export async function panEmails(
-  emails: Email[],
+    emails: Email[],
 ): Promise<EmailAnalysisResult> {
-  const prepared = prepareEmailsForAnalysis(emails);
+    const prepared = prepareEmailsForAnalysis(emails);
 
-  // Первый проход
-  const rawResult = await analyzeEmails(prepared);
-  const firstResult = normalizeEmailAnalysis(rawResult);
+    // Первый проход
+    const rawResult = await analyzeEmails(prepared);
+    const firstResult = normalizeEmailAnalysis(rawResult);
 
-  const firstValidation = validateEmailAnalysis(
-    prepared,
-    firstResult,
-  );
-
-  // Всё получилось с первого раза
-  if (firstValidation.isValid) {
-    return firstResult;
-  }
-
-  // Находим письма, которые модель пропустила
-  const missingEmails = prepared.filter((email) =>
-    firstValidation.missingIds.includes(email.id),
-  );
-
-  // Если проблема не в пропущенных письмах,
-  // второй проход нам не поможет
-  if (missingEmails.length === 0) {
-    throw new Error('Email analysis validation failed');
-  }
-
-  // Второй проход
-  const secondRawResult = await analyzeMissingEmails(
-    missingEmails,
-    firstResult.categories,
-  );
-
-  const secondResult = normalizeEmailAnalysis(
-    secondRawResult,
-  );
-
-  const secondValidation = validateEmailAnalysis(
-    missingEmails,
-    secondResult,
-  );
-
-  if (!secondValidation.isValid) {
-    throw new Error(
-      'Second email analysis pass failed validation',
+    const firstValidation = validateEmailAnalysis(
+        prepared,
+        firstResult,
     );
-  }
 
-  // Объединяем оба результата
-  const finalResult = mergeEmailAnalysis(
-    firstResult,
-    secondResult,
-  );
+    // Всё получилось с первого раза
+    if (firstValidation.isValid) {
+        return firstResult;
+    }
 
-  // Последняя страховка
-  const finalValidation = validateEmailAnalysis(
-    prepared,
-    finalResult,
-  );
-
-  if (!finalValidation.isValid) {
-    throw new Error(
-      'Final email analysis failed validation',
+    // Находим письма, которые модель пропустила
+    const missingEmails = prepared.filter((email) =>
+        firstValidation.missingIds.includes(email.id),
     );
-  }
 
-  return finalResult;
+    // Если проблема не в пропущенных письмах,
+    // второй проход нам не поможет
+    if (missingEmails.length === 0) {
+        throw new Error('Email analysis validation failed');
+    }
+
+    // Второй проход
+    const secondRawResult = await analyzeMissingEmails(
+        missingEmails,
+        firstResult.categories,
+    );
+
+    const secondResult = normalizeEmailAnalysis(
+        secondRawResult,
+    );
+
+    const secondValidation = validateEmailAnalysis(
+        missingEmails,
+        secondResult,
+    );
+
+    if (!secondValidation.isValid) {
+        throw new Error(
+            [
+                'Second email analysis pass failed validation',
+                `Input: ${secondValidation.totalInput}`,
+                `Assigned: ${secondValidation.totalAssigned}`,
+                `Missing: ${secondValidation.missingIds.length}`,
+                `Duplicates: ${secondValidation.duplicateIds.length}`,
+                `Unknown: ${secondValidation.unknownIds.length}`,
+            ].join('\n'),
+        );
+    }
+
+    // Объединяем оба результата
+    const finalResult = mergeEmailAnalysis(
+        firstResult,
+        secondResult,
+    );
+
+    // Последняя страховка
+    const finalValidation = validateEmailAnalysis(
+        prepared,
+        finalResult,
+    );
+
+    if (!finalValidation.isValid) {
+        throw new Error(
+            [
+                'Final email analysis failed validation',
+                `Input: ${finalValidation.totalInput}`,
+                `Assigned: ${finalValidation.totalAssigned}`,
+                `Missing: ${finalValidation.missingIds.length}`,
+                `Duplicates: ${finalValidation.duplicateIds.length}`,
+                `Unknown: ${finalValidation.unknownIds.length}`,
+            ].join('\n'),
+        );
+    }
+
+    return finalResult;
 }
