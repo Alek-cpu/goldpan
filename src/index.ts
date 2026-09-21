@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 import { createImapClient } from './email/imapClient.js';
 import { getMailboxes } from './email/getMailboxes.js';
+import { getLatestEmails } from './email/getLatestEmails.js';
 
 async function main() {
     const client = createImapClient();
@@ -18,6 +19,17 @@ async function main() {
             console.log(
                 `- ${mailbox.path}${mailbox.specialUse ? ` (${mailbox.specialUse})` : ''}`,
             );
+        }
+
+        const emails = await getLatestEmails(client, 5);
+
+        console.log('\n📧 Latest emails:');
+
+        for (const email of emails) {
+            console.log(`\nFrom: ${email.from}`);
+            console.log(`Subject: ${email.subject}`);
+            console.log(`Date: ${email.date.toLocaleString()}`);
+            console.log(`ID: ${email.id}`);
         }
     } catch (error) {
         console.error('❌ Failed to connect to IMAP server:');
